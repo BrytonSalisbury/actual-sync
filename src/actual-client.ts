@@ -22,7 +22,7 @@ export class ApiVersionMismatchError extends Error {
       [
         `Actual Budget server is on ${serverVersion}, but this container ships @actual-app/api ${bundledVersion}.`,
         `Tried to download a matching API at runtime, but it failed: ${downloadError}.`,
-        `Refusing to open the budget with the older bundled API — that would produce an "out-of-sync-migrations" error and could corrupt data.`,
+        `Not falling back to the bundled API because it is older than the server — if the budget contains migrations only the server knows, @actual-app/api will refuse to open it with "out-of-sync-migrations".`,
         `Fix: upgrade this container to a newer redbark-co/actual-sync image, or pin your Actual server to ${bundledVersion}.`,
       ].join(' ')
     )
@@ -188,39 +188,43 @@ async function loadActualApi(
         'Actual Budget server version differs from bundled API'
       )
 
+      const serverIsNewer = compareSemver(serverVersion, bundledVersion) > 0
       const { path: matchingPath, error: downloadError } = downloadMatchingApi(
         serverVersion,
         dataDir
       )
+
       if (matchingPath) {
         try {
           return require(matchingPath) as typeof import('@actual-app/api')
         } catch (error) {
-          throw new ApiVersionMismatchError(
-            serverVersion,
-            bundledVersion,
-            `loaded downloaded API at ${matchingPath} but require() failed: ${String(error)}`
+          // Server newer than bundled → bundled cannot open the DB without
+          // hitting @actual-app/api's out-of-sync-migrations guard. Surface
+          // the version mismatch instead of letting that opaque error fire.
+          if (serverIsNewer) {
+            throw new ApiVersionMismatchError(
+              serverVersion,
+              bundledVersion,
+              `loaded downloaded API at ${matchingPath} but require() failed: ${String(error)}`
+            )
+          }
+          logger.warn(
+            { error: String(error) },
+            'Failed to load downloaded API, using bundled version'
           )
         }
-      }
-
-      // Download failed. Bundled API can still safely open a budget if the
-      // server is the same major as bundled OR older (no unknown migrations).
-      // If the server is newer than bundled, falling back to the bundled API
-      // would hit @actual-app/api's `out-of-sync-migrations` guard with an
-      // opaque error. Fail loud here instead so the user knows what to do.
-      if (compareSemver(serverVersion, bundledVersion) > 0) {
+      } else if (serverIsNewer) {
         throw new ApiVersionMismatchError(
           serverVersion,
           bundledVersion,
           downloadError ?? 'unknown download failure'
         )
+      } else {
+        logger.warn(
+          { serverVersion, bundledVersion, downloadError },
+          'Could not download matching @actual-app/api; falling back to bundled API'
+        )
       }
-
-      logger.warn(
-        { serverVersion, bundledVersion, downloadError },
-        'Could not download matching @actual-app/api; server is older than bundled, falling back to bundled API'
-      )
     } else {
       logger.debug(
         { version: bundledVersion },
