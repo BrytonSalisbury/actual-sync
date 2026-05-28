@@ -189,6 +189,7 @@ Actual Budget updates frequently and the sync protocol can break between client/
 | 1 | Sync completed with errors (some transactions failed) |
 | 2 | Configuration error (missing env vars, invalid mapping) |
 | 3 | Connection error (cannot reach Redbark or Actual) |
+| 4 | Actual server version is newer than the bundled API and no matching version could be downloaded (upgrade this container) |
 
 ## Security
 

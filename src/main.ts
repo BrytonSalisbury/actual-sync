@@ -1,7 +1,7 @@
 import { logger } from './logger.js'
 import { loadConfig, ConfigError } from './config.js'
 import { RedbarkClient } from './redbark-client.js'
-import { listActualAccounts } from './actual-client.js'
+import { ApiVersionMismatchError, listActualAccounts } from './actual-client.js'
 import { runSync } from './sync.js'
 
 // Exit codes
@@ -9,6 +9,7 @@ const EXIT_SUCCESS = 0
 const EXIT_SYNC_ERRORS = 1
 const EXIT_CONFIG_ERROR = 2
 const EXIT_CONNECTION_ERROR = 3
+const EXIT_VERSION_MISMATCH = 4
 
 interface CliFlags {
   listRedbarkAccounts: boolean
@@ -276,6 +277,18 @@ main().catch((error) => {
   if (error instanceof ConfigError) {
     console.error(`ERROR: ${error.message}`)
     process.exit(EXIT_CONFIG_ERROR)
+  }
+
+  if (error instanceof ApiVersionMismatchError) {
+    logger.error(
+      {
+        serverVersion: error.serverVersion,
+        bundledVersion: error.bundledVersion,
+        downloadError: error.downloadError,
+      },
+      error.message
+    )
+    process.exit(EXIT_VERSION_MISMATCH)
   }
 
   if (
