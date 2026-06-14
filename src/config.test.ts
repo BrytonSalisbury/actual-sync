@@ -79,4 +79,33 @@ describe('loadConfig', () => {
     const { REDBARK_API_KEY, ...rest } = validEnv
     expect(() => loadConfig(rest)).toThrow(ConfigError)
   })
+
+  it('defaults webhookUrl to undefined', () => {
+    const config = loadConfig(validEnv)
+    expect(config.webhookUrl).toBeUndefined()
+  })
+
+  it('accepts a valid webhookUrl', () => {
+    const config = loadConfig({ ...validEnv, WEBHOOK_URL: 'https://hooks.example.com/notify' })
+    expect(config.webhookUrl).toBe('https://hooks.example.com/notify')
+  })
+
+  it('throws on invalid webhookUrl', () => {
+    expect(() => loadConfig({ ...validEnv, WEBHOOK_URL: 'not-a-url' })).toThrow(ConfigError)
+  })
+
+  it('defaults webhookExcludedAccountIds to empty array', () => {
+    const config = loadConfig(validEnv)
+    expect(config.webhookExcludedAccountIds).toEqual([])
+  })
+
+  it('parses webhookExcludedAccountIds from comma-separated string', () => {
+    const config = loadConfig({ ...validEnv, WEBHOOK_EXCLUDED_ACCOUNT_IDS: 'acc1,acc2,acc3' })
+    expect(config.webhookExcludedAccountIds).toEqual(['acc1', 'acc2', 'acc3'])
+  })
+
+  it('trims whitespace in webhookExcludedAccountIds', () => {
+    const config = loadConfig({ ...validEnv, WEBHOOK_EXCLUDED_ACCOUNT_IDS: ' acc1 , acc2 ' })
+    expect(config.webhookExcludedAccountIds).toEqual(['acc1', 'acc2'])
+  })
 })

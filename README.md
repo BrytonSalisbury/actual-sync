@@ -91,6 +91,9 @@ docker run --rm --env-file .env \
 | `SYNC_DAYS` | No | `30` | Number of days of history to sync |
 | `LOG_LEVEL` | No | `info` | `debug`, `info`, `warn`, or `error` |
 | `DRY_RUN` | No | `false` | Set to `true` to preview without importing |
+| `WEBHOOK_URL` | No | — | POST transaction updates to this URL (see [Webhook Notifications](#webhook-notifications)) |
+| `WEBHOOK_BEARER_TOKEN` | No | — | Bearer token sent as `Authorization: Bearer <token>` |
+| `WEBHOOK_EXCLUDED_ACCOUNT_IDS` | No | — | Comma-separated Redbark account IDs to skip notifications for |
 
 ### Encrypted Databases
 
@@ -107,6 +110,32 @@ ACCOUNT_MAPPING=<redbark_id>:<actual_id>,<redbark_id>:<actual_id>
 **Finding IDs:**
 - **Redbark**: Run `--list-redbark-accounts` or check the Redbark dashboard
 - **Actual**: Run `--list-actual-accounts` or copy the UUID from the account URL in Actual's web UI
+
+### Webhook Notifications
+
+When `WEBHOOK_URL` is set, the sync will POST a JSON payload to that URL after each account sync that has new or updated transactions. Accounts with no changes are skipped.
+
+```json
+{
+  "event": "transactions.updated",
+  "redbarkAccountId": "acc_abc123",
+  "actualAccountId": "1cfdbb80-6274-49bf-b0c2-737235a4c81f",
+  "accountName": "Everyday Account",
+  "added": 5,
+  "updated": 1,
+  "timestamp": "2026-06-14T12:00:00.000Z"
+}
+```
+
+**Authentication:** Set `WEBHOOK_BEARER_TOKEN` to send an `Authorization: Bearer <token>` header with every request.
+
+**Excluding accounts:** Set `WEBHOOK_EXCLUDED_ACCOUNT_IDS` to a comma-separated list of Redbark account IDs that should never trigger notifications:
+
+```bash
+WEBHOOK_EXCLUDED_ACCOUNT_IDS=acc_abc123,acc_def456
+```
+
+Webhook failures are logged as warnings and never block the sync — notifications are best-effort.
 
 ### CLI Flags
 
