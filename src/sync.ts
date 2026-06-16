@@ -2,6 +2,7 @@ import { logger } from './logger.js'
 import { RedbarkClient } from './redbark-client.js'
 import { withActualBudget } from './actual-client.js'
 import { transformTransactions } from './transform.js'
+import { notifyAccountSync } from './notifications.js'
 import type { Config } from './config.js'
 import type { SyncResult } from './types.js'
 
@@ -151,7 +152,7 @@ export async function runSync(config: Config): Promise<SyncResult[]> {
           `Imported: ${added} added, ${updated} updated, ${errors} errors`
         )
 
-        results.push({
+        const result: SyncResult = {
           redbarkAccountId: mapping.redbarkAccountId,
           actualAccountId: mapping.actualAccountId,
           accountName: redbarkAccount.name,
@@ -159,7 +160,9 @@ export async function runSync(config: Config): Promise<SyncResult[]> {
           added,
           updated,
           errors,
-        })
+        }
+        results.push(result)
+        await notifyAccountSync(result, config)
       }
 
       return results

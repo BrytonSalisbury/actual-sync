@@ -95,6 +95,9 @@ ENVIRONMENT VARIABLES:
   SYNC_DAYS                   Days to sync (default: 30)
   LOG_LEVEL                   debug, info, warn, error (default: info)
   DRY_RUN                     true/false (default: false)
+  WEBHOOK_URL                 POST transaction updates here (optional)
+  WEBHOOK_BEARER_TOKEN        Bearer token for webhook auth (optional)
+  WEBHOOK_EXCLUDED_ACCOUNT_IDS  Comma-separated Redbark account IDs to skip (optional)
 
 EXAMPLES:
   # Run sync

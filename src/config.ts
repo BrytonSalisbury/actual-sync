@@ -36,6 +36,27 @@ const configSchema = z.object({
     .string()
     .transform((v) => v === 'true')
     .default('false'),
+  webhookUrl: z.string().url().optional(),
+  webhookBearerToken: z.string().optional(),
+  webhookExcludedAccountIds: z
+    .string()
+    .optional()
+    .transform((val) => (val ? val.split(',').map((s) => s.trim()).filter(Boolean) : [])),
+  webhookHeaders: z
+    .string()
+    .optional()
+    .transform((val): Record<string, string> => {
+      if (!val) return {}
+      return Object.fromEntries(
+        val.split(',').flatMap((pair) => {
+          const idx = pair.indexOf(':')
+          if (idx === -1) return []
+          const key = pair.slice(0, idx).trim()
+          const value = pair.slice(idx + 1).trim()
+          return key ? [[key, value]] : []
+        })
+      )
+    }),
 })
 
 export type Config = z.infer<typeof configSchema>
@@ -55,6 +76,10 @@ export function loadConfig(overrides?: Partial<Record<string, string>>): Config 
     syncDays: env.SYNC_DAYS || '30',
     logLevel: env.LOG_LEVEL || 'info',
     dryRun: env.DRY_RUN || 'false',
+    webhookUrl: env.WEBHOOK_URL || undefined,
+    webhookBearerToken: env.WEBHOOK_BEARER_TOKEN || undefined,
+    webhookExcludedAccountIds: env.WEBHOOK_EXCLUDED_ACCOUNT_IDS || undefined,
+    webhookHeaders: env.WEBHOOK_HEADERS || undefined,
   })
 
   if (!result.success) {

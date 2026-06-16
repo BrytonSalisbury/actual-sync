@@ -55,6 +55,16 @@ export interface SyncResult {
   errors: number
 }
 
+export interface WebhookPayload {
+  event: 'transactions.updated'
+  redbarkAccountId: string
+  actualAccountId: string
+  accountName: string
+  added: number
+  updated: number
+  timestamp: string
+}
+
 export interface PaginationInfo {
   total: number
   limit: number

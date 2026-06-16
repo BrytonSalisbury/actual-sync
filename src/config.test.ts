@@ -79,4 +79,56 @@ describe('loadConfig', () => {
     const { REDBARK_API_KEY, ...rest } = validEnv
     expect(() => loadConfig(rest)).toThrow(ConfigError)
   })
+
+  it('defaults webhookUrl to undefined', () => {
+    const config = loadConfig(validEnv)
+    expect(config.webhookUrl).toBeUndefined()
+  })
+
+  it('accepts a valid webhookUrl', () => {
+    const config = loadConfig({ ...validEnv, WEBHOOK_URL: 'https://hooks.example.com/notify' })
+    expect(config.webhookUrl).toBe('https://hooks.example.com/notify')
+  })
+
+  it('throws on invalid webhookUrl', () => {
+    expect(() => loadConfig({ ...validEnv, WEBHOOK_URL: 'not-a-url' })).toThrow(ConfigError)
+  })
+
+  it('defaults webhookExcludedAccountIds to empty array', () => {
+    const config = loadConfig(validEnv)
+    expect(config.webhookExcludedAccountIds).toEqual([])
+  })
+
+  it('parses webhookExcludedAccountIds from comma-separated string', () => {
+    const config = loadConfig({ ...validEnv, WEBHOOK_EXCLUDED_ACCOUNT_IDS: 'acc1,acc2,acc3' })
+    expect(config.webhookExcludedAccountIds).toEqual(['acc1', 'acc2', 'acc3'])
+  })
+
+  it('trims whitespace in webhookExcludedAccountIds', () => {
+    const config = loadConfig({ ...validEnv, WEBHOOK_EXCLUDED_ACCOUNT_IDS: ' acc1 , acc2 ' })
+    expect(config.webhookExcludedAccountIds).toEqual(['acc1', 'acc2'])
+  })
+
+  it('defaults webhookHeaders to empty object', () => {
+    const config = loadConfig(validEnv)
+    expect(config.webhookHeaders).toEqual({})
+  })
+
+  it('parses webhookHeaders from comma-separated Key:Value pairs', () => {
+    const config = loadConfig({ ...validEnv, WEBHOOK_HEADERS: 'X-Tag:finance,X-Priority:3' })
+    expect(config.webhookHeaders).toEqual({ 'X-Tag': 'finance', 'X-Priority': '3' })
+  })
+
+  it('parses webhookHeaders with values containing colons', () => {
+    const config = loadConfig({
+      ...validEnv,
+      WEBHOOK_HEADERS: 'X-Other:val:with:colons',
+    })
+    expect(config.webhookHeaders).toEqual({ 'X-Other': 'val:with:colons' })
+  })
+
+  it('trims whitespace in webhookHeaders keys and values', () => {
+    const config = loadConfig({ ...validEnv, WEBHOOK_HEADERS: ' X-Tag : finance , X-Priority : 3 ' })
+    expect(config.webhookHeaders).toEqual({ 'X-Tag': 'finance', 'X-Priority': '3' })
+  })
 })
