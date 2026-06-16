@@ -108,4 +108,27 @@ describe('loadConfig', () => {
     const config = loadConfig({ ...validEnv, WEBHOOK_EXCLUDED_ACCOUNT_IDS: ' acc1 , acc2 ' })
     expect(config.webhookExcludedAccountIds).toEqual(['acc1', 'acc2'])
   })
+
+  it('defaults webhookHeaders to empty object', () => {
+    const config = loadConfig(validEnv)
+    expect(config.webhookHeaders).toEqual({})
+  })
+
+  it('parses webhookHeaders from comma-separated Key:Value pairs', () => {
+    const config = loadConfig({ ...validEnv, WEBHOOK_HEADERS: 'X-Tag:finance,X-Priority:3' })
+    expect(config.webhookHeaders).toEqual({ 'X-Tag': 'finance', 'X-Priority': '3' })
+  })
+
+  it('parses webhookHeaders with URL values containing colons', () => {
+    const config = loadConfig({
+      ...validEnv,
+      WEBHOOK_HEADERS: 'X-Template:https://ntfy.example.com/template.json',
+    })
+    expect(config.webhookHeaders).toEqual({ 'X-Template': 'https://ntfy.example.com/template.json' })
+  })
+
+  it('trims whitespace in webhookHeaders keys and values', () => {
+    const config = loadConfig({ ...validEnv, WEBHOOK_HEADERS: ' X-Tag : finance , X-Priority : 3 ' })
+    expect(config.webhookHeaders).toEqual({ 'X-Tag': 'finance', 'X-Priority': '3' })
+  })
 })

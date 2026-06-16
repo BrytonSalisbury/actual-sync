@@ -28,6 +28,7 @@ export async function notifyAccountSync(
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    ...config.webhookHeaders,
   }
   if (config.webhookBearerToken) {
     headers['Authorization'] = `Bearer ${config.webhookBearerToken}`

@@ -17,6 +17,7 @@ const baseConfig: Config = {
   webhookUrl: 'https://hooks.example.com/notify',
   webhookBearerToken: undefined,
   webhookExcludedAccountIds: [],
+  webhookHeaders: {},
 }
 
 const baseResult: SyncResult = {
@@ -117,6 +118,42 @@ describe('notifyAccountSync', () => {
   it('logs a warning on non-OK response without throwing', async () => {
     vi.stubGlobal('fetch', mockFetch(500, false))
     await expect(notifyAccountSync(baseResult, baseConfig)).resolves.toBeUndefined()
+  })
+
+  it('sends extra headers from webhookHeaders', async () => {
+    const fetch = mockFetch(200)
+    vi.stubGlobal('fetch', fetch)
+    await notifyAccountSync(baseResult, {
+      ...baseConfig,
+      webhookHeaders: { 'X-Template': 'https://ntfy.example.com/template.json', 'X-Priority': '3' },
+    })
+
+    const [, init] = fetch.mock.calls[0]!
+    expect(init.headers['X-Template']).toBe('https://ntfy.example.com/template.json')
+    expect(init.headers['X-Priority']).toBe('3')
+  })
+
+  it('sends no extra headers when webhookHeaders is empty', async () => {
+    const fetch = mockFetch(200)
+    vi.stubGlobal('fetch', fetch)
+    await notifyAccountSync(baseResult, { ...baseConfig, webhookHeaders: {} })
+
+    const [, init] = fetch.mock.calls[0]!
+    expect(Object.keys(init.headers)).toEqual(['Content-Type'])
+  })
+
+  it('allows webhookHeaders to coexist with bearer token', async () => {
+    const fetch = mockFetch(200)
+    vi.stubGlobal('fetch', fetch)
+    await notifyAccountSync(baseResult, {
+      ...baseConfig,
+      webhookBearerToken: 'secret',
+      webhookHeaders: { 'X-Template': 'https://ntfy.example.com/template.json' },
+    })
+
+    const [, init] = fetch.mock.calls[0]!
+    expect(init.headers['Authorization']).toBe('Bearer secret')
+    expect(init.headers['X-Template']).toBe('https://ntfy.example.com/template.json')
   })
 
   it('logs a warning on fetch error without throwing', async () => {
