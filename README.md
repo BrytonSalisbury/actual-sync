@@ -133,7 +133,7 @@ When `WEBHOOK_URL` is set, the sync will POST a JSON payload to that URL after e
 **Custom headers:** Set `WEBHOOK_HEADERS` to a comma-separated list of `Header:Value` pairs to include extra headers with every webhook request. Values may contain colons (only the first colon is treated as the key/value separator). This is useful for services like [ntfy](https://ntfy.sh) that use custom headers for templating and priority:
 
 ```bash
-WEBHOOK_HEADERS=X-Template:https://ntfy.example.com/template.json,X-Priority:3
+WEBHOOK_HEADERS=X-Template:transaction,X-Priority:3
 ```
 
 **Excluding accounts:** Set `WEBHOOK_EXCLUDED_ACCOUNT_IDS` to a comma-separated list of Redbark account IDs that should never trigger notifications:

@@ -119,12 +119,12 @@ describe('loadConfig', () => {
     expect(config.webhookHeaders).toEqual({ 'X-Tag': 'finance', 'X-Priority': '3' })
   })
 
-  it('parses webhookHeaders with URL values containing colons', () => {
+  it('parses webhookHeaders with values containing colons', () => {
     const config = loadConfig({
       ...validEnv,
-      WEBHOOK_HEADERS: 'X-Template:https://ntfy.example.com/template.json',
+      WEBHOOK_HEADERS: 'X-Other:val:with:colons',
     })
-    expect(config.webhookHeaders).toEqual({ 'X-Template': 'https://ntfy.example.com/template.json' })
+    expect(config.webhookHeaders).toEqual({ 'X-Other': 'val:with:colons' })
   })
 
   it('trims whitespace in webhookHeaders keys and values', () => {

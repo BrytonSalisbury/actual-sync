@@ -125,11 +125,11 @@ describe('notifyAccountSync', () => {
     vi.stubGlobal('fetch', fetch)
     await notifyAccountSync(baseResult, {
       ...baseConfig,
-      webhookHeaders: { 'X-Template': 'https://ntfy.example.com/template.json', 'X-Priority': '3' },
+      webhookHeaders: { 'X-Template': 'transaction', 'X-Priority': '3' },
     })
 
     const [, init] = fetch.mock.calls[0]!
-    expect(init.headers['X-Template']).toBe('https://ntfy.example.com/template.json')
+    expect(init.headers['X-Template']).toBe('transaction')
     expect(init.headers['X-Priority']).toBe('3')
   })
 
@@ -148,12 +148,12 @@ describe('notifyAccountSync', () => {
     await notifyAccountSync(baseResult, {
       ...baseConfig,
       webhookBearerToken: 'secret',
-      webhookHeaders: { 'X-Template': 'https://ntfy.example.com/template.json' },
+      webhookHeaders: { 'X-Template': 'transaction' },
     })
 
     const [, init] = fetch.mock.calls[0]!
     expect(init.headers['Authorization']).toBe('Bearer secret')
-    expect(init.headers['X-Template']).toBe('https://ntfy.example.com/template.json')
+    expect(init.headers['X-Template']).toBe('transaction')
   })
 
   it('logs a warning on fetch error without throwing', async () => {
