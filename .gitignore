@@ -1,6 +1,9 @@
 node_modules/
 dist/
 data/
+scripts/
 .env
+.prettier*
 *.log
 .DS_Store
+package-lock.json
