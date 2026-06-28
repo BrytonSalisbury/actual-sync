@@ -134,7 +134,8 @@ export async function runSync(config: Config): Promise<SyncResult[]> {
         // Import into Actual Budget
         const importResult = await importTransactions(
           mapping.actualAccountId,
-          actualTransactions
+          actualTransactions,
+          { reimportDeleted: config.actualReimportDeleted }
         )
 
         const added = Array.isArray(importResult.added)

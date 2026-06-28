@@ -1,23 +1,26 @@
-import { logger } from './logger.js'
-import { loadConfig, ConfigError } from './config.js'
-import { RedbarkClient } from './redbark-client.js'
-import { ApiVersionMismatchError, listActualAccounts } from './actual-client.js'
-import { runSync } from './sync.js'
+import { logger } from "./logger.js";
+import { loadConfig, ConfigError } from "./config.js";
+import { RedbarkClient } from "./redbark-client.js";
+import {
+  ApiVersionMismatchError,
+  listActualAccounts,
+} from "./actual-client.js";
+import { runSync } from "./sync.js";
 
 // Exit codes
-const EXIT_SUCCESS = 0
-const EXIT_SYNC_ERRORS = 1
-const EXIT_CONFIG_ERROR = 2
-const EXIT_CONNECTION_ERROR = 3
-const EXIT_VERSION_MISMATCH = 4
+const EXIT_SUCCESS = 0;
+const EXIT_SYNC_ERRORS = 1;
+const EXIT_CONFIG_ERROR = 2;
+const EXIT_CONNECTION_ERROR = 3;
+const EXIT_VERSION_MISMATCH = 4;
 
 interface CliFlags {
-  listRedbarkAccounts: boolean
-  listRedbarkCategories: boolean
-  listActualAccounts: boolean
-  dryRun: boolean
-  days?: number
-  help: boolean
+  listRedbarkAccounts: boolean;
+  listRedbarkCategories: boolean;
+  listActualAccounts: boolean;
+  dryRun: boolean;
+  days?: number;
+  help: boolean;
 }
 
 function parseArgs(argv: string[]): CliFlags {
@@ -27,45 +30,45 @@ function parseArgs(argv: string[]): CliFlags {
     listActualAccounts: false,
     dryRun: false,
     help: false,
-  }
+  };
 
   for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i]
+    const arg = argv[i];
     switch (arg) {
-      case '--list-redbark-accounts':
-        flags.listRedbarkAccounts = true
-        break
-      case '--list-redbark-categories':
-        flags.listRedbarkCategories = true
-        break
-      case '--list-actual-accounts':
-        flags.listActualAccounts = true
-        break
-      case '--dry-run':
-        flags.dryRun = true
-        break
-      case '--days': {
-        const val = argv[++i]
+      case "--list-redbark-accounts":
+        flags.listRedbarkAccounts = true;
+        break;
+      case "--list-redbark-categories":
+        flags.listRedbarkCategories = true;
+        break;
+      case "--list-actual-accounts":
+        flags.listActualAccounts = true;
+        break;
+      case "--dry-run":
+        flags.dryRun = true;
+        break;
+      case "--days": {
+        const val = argv[++i];
         if (!val || isNaN(parseInt(val, 10))) {
-          console.error('ERROR: --days requires a number')
-          process.exit(EXIT_CONFIG_ERROR)
+          console.error("ERROR: --days requires a number");
+          process.exit(EXIT_CONFIG_ERROR);
         }
-        flags.days = parseInt(val, 10)
-        break
+        flags.days = parseInt(val, 10);
+        break;
       }
-      case '--help':
-      case '-h':
-        flags.help = true
-        break
+      case "--help":
+      case "-h":
+        flags.help = true;
+        break;
       default:
-        if (arg?.startsWith('--')) {
-          console.error(`Unknown flag: ${arg}`)
-          process.exit(EXIT_CONFIG_ERROR)
+        if (arg?.startsWith("--")) {
+          console.error(`Unknown flag: ${arg}`);
+          process.exit(EXIT_CONFIG_ERROR);
         }
     }
   }
 
-  return flags
+  return flags;
 }
 
 function printHelp(): void {
@@ -95,6 +98,7 @@ ENVIRONMENT VARIABLES:
   SYNC_DAYS                   Days to sync (default: 30)
   LOG_LEVEL                   debug, info, warn, error (default: info)
   DRY_RUN                     true/false (default: false)
+  ACTUAL_REIMPORT_DELETED     true/false (default: false)
   WEBHOOK_URL                 POST transaction updates here (optional)
   WEBHOOK_BEARER_TOKEN        Bearer token for webhook auth (optional)
   WEBHOOK_EXCLUDED_ACCOUNT_IDS  Comma-separated Redbark account IDs to skip (optional)
@@ -118,84 +122,84 @@ EXAMPLES:
 
 DOCKER:
   docker run --rm --env-file .env -v sync-data:/app/data ghcr.io/redbark-co/actual-sync
-`)
+`);
 }
 
 async function handleListRedbarkAccounts(): Promise<void> {
-  const apiKey = process.env.REDBARK_API_KEY
-  const apiUrl = process.env.REDBARK_API_URL || 'https://api.redbark.com'
+  const apiKey = process.env.REDBARK_API_KEY;
+  const apiUrl = process.env.REDBARK_API_URL || "https://api.redbark.com";
 
   if (!apiKey) {
     console.error(
-      'ERROR: REDBARK_API_KEY is not set.\n' +
-        '  → Create an API key at https://app.redbark.com/settings'
-    )
-    process.exit(EXIT_CONFIG_ERROR)
+      "ERROR: REDBARK_API_KEY is not set.\n" +
+        "  → Create an API key at https://app.redbark.com/settings",
+    );
+    process.exit(EXIT_CONFIG_ERROR);
   }
 
-  const client = new RedbarkClient(apiKey, apiUrl)
+  const client = new RedbarkClient(apiKey, apiUrl);
   const [connections, accounts] = await Promise.all([
     client.listConnections(),
     client.listAccounts(),
-  ])
+  ]);
 
   // Group accounts by connectionId
-  const accountsByConnection = new Map<string, typeof accounts>()
+  const accountsByConnection = new Map<string, typeof accounts>();
   for (const account of accounts) {
-    const group = accountsByConnection.get(account.connectionId) || []
-    group.push(account)
-    accountsByConnection.set(account.connectionId, group)
+    const group = accountsByConnection.get(account.connectionId) || [];
+    group.push(account);
+    accountsByConnection.set(account.connectionId, group);
   }
 
-  console.log('\nRedbark Accounts:')
+  console.log("\nRedbark Accounts:");
   for (const conn of connections) {
-    console.log(`  Connection: ${conn.institutionName} (${conn.provider})`)
-    const connAccounts = accountsByConnection.get(conn.id) || []
+    console.log(`  Connection: ${conn.institutionName} (${conn.provider})`);
+    const connAccounts = accountsByConnection.get(conn.id) || [];
     for (const account of connAccounts) {
-      const mask = account.accountNumber ? `  ${account.accountNumber}` : ''
+      const mask = account.accountNumber ? `  ${account.accountNumber}` : "";
       console.log(
-        `    ${account.id}  ${account.name} (${account.type})${mask}`
-      )
+        `    ${account.id}  ${account.name} (${account.type})${mask}`,
+      );
     }
-    console.log()
+    console.log();
   }
 }
 
 async function handleListRedbarkCategories(): Promise<void> {
-  const apiKey = process.env.REDBARK_API_KEY
-  const apiUrl = process.env.REDBARK_API_URL || 'https://api.redbark.com'
+  const apiKey = process.env.REDBARK_API_KEY;
+  const apiUrl = process.env.REDBARK_API_URL || "https://api.redbark.com";
 
   if (!apiKey) {
     console.error(
-      'ERROR: REDBARK_API_KEY is not set.\n' +
-        '  → Create an API key at https://app.redbark.com/settings'
-    )
-    process.exit(EXIT_CONFIG_ERROR)
+      "ERROR: REDBARK_API_KEY is not set.\n" +
+        "  → Create an API key at https://app.redbark.com/settings",
+    );
+    process.exit(EXIT_CONFIG_ERROR);
   }
 
-  const client = new RedbarkClient(apiKey, apiUrl)
-  const categories = await client.listCategories()
+  const client = new RedbarkClient(apiKey, apiUrl);
+  const categories = await client.listCategories();
 
-  console.log('\nRedbark Transaction Categories:')
+  console.log("\nRedbark Transaction Categories:");
   for (const cat of categories) {
-    console.log(`  ${cat.label}`)
+    console.log(`  ${cat.label}`);
   }
-  console.log()
+  console.log();
 }
 
 async function handleListActualAccounts(): Promise<void> {
-  const serverUrl = process.env.ACTUAL_SERVER_URL
-  const password = process.env.ACTUAL_PASSWORD
-  const budgetId = process.env.ACTUAL_BUDGET_ID
-  const encryptionPassword = process.env.ACTUAL_ENCRYPTION_PASSWORD
-  const dataDir = process.env.ACTUAL_DATA_DIR || './data'
+  const serverUrl = process.env.ACTUAL_SERVER_URL;
+  const password = process.env.ACTUAL_PASSWORD;
+  const budgetId = process.env.ACTUAL_BUDGET_ID;
+  const encryptionPassword = process.env.ACTUAL_ENCRYPTION_PASSWORD;
+  const dataDir = process.env.ACTUAL_DATA_DIR || "./data";
 
   if (!serverUrl || !password || !budgetId) {
     console.error(
-      'ERROR: ACTUAL_SERVER_URL, ACTUAL_PASSWORD, and ACTUAL_BUDGET_ID are required.\n' +
-        '  → Set these environment variables to connect to your Actual Budget server.'
-    )
-    process.exit(EXIT_CONFIG_ERROR)
+      "ERROR: ACTUAL_SERVER_URL, ACTUAL_PASSWORD, and ACTUAL_BUDGET_ID are required.\n" +
+        "  → Set these environment variables to connect to your Actual Budget server.",
+    );
+    process.exit(EXIT_CONFIG_ERROR);
   }
 
   const accounts = await listActualAccounts({
@@ -204,82 +208,82 @@ async function handleListActualAccounts(): Promise<void> {
     budgetId,
     encryptionPassword,
     dataDir,
-  })
+  });
 
-  console.log('\nActual Budget Accounts:')
+  console.log("\nActual Budget Accounts:");
   for (const account of accounts) {
-    if (account.closed) continue
-    const type = account.type ? ` (${account.type})` : ''
-    const badge = account.offbudget ? ' [off-budget]' : ''
-    console.log(`  ${account.id}  ${account.name}${type}${badge}`)
+    if (account.closed) continue;
+    const type = account.type ? ` (${account.type})` : "";
+    const badge = account.offbudget ? " [off-budget]" : "";
+    console.log(`  ${account.id}  ${account.name}${type}${badge}`);
   }
-  console.log()
+  console.log();
 }
 
 async function main(): Promise<void> {
-  const flags = parseArgs(process.argv.slice(2))
+  const flags = parseArgs(process.argv.slice(2));
 
   if (flags.help) {
-    printHelp()
-    process.exit(EXIT_SUCCESS)
+    printHelp();
+    process.exit(EXIT_SUCCESS);
   }
 
   // Handle list commands (don't need full config)
   if (flags.listRedbarkAccounts) {
-    await handleListRedbarkAccounts()
-    process.exit(EXIT_SUCCESS)
+    await handleListRedbarkAccounts();
+    process.exit(EXIT_SUCCESS);
   }
 
   if (flags.listRedbarkCategories) {
-    await handleListRedbarkCategories()
-    process.exit(EXIT_SUCCESS)
+    await handleListRedbarkCategories();
+    process.exit(EXIT_SUCCESS);
   }
 
   if (flags.listActualAccounts) {
-    await handleListActualAccounts()
-    process.exit(EXIT_SUCCESS)
+    await handleListActualAccounts();
+    process.exit(EXIT_SUCCESS);
   }
 
   // Build config overrides from CLI flags
-  const overrides: Record<string, string> = {}
-  if (flags.dryRun) overrides.DRY_RUN = 'true'
-  if (flags.days) overrides.SYNC_DAYS = String(flags.days)
+  const overrides: Record<string, string> = {};
+  if (flags.dryRun) overrides.DRY_RUN = "true";
+  if (flags.days) overrides.SYNC_DAYS = String(flags.days);
 
   // Load and validate config
-  const config = loadConfig(overrides)
+  const config = loadConfig(overrides);
 
   if (config.dryRun) {
-    logger.info('[DRY RUN] Preview mode — no changes will be written')
+    logger.info("[DRY RUN] Preview mode — no changes will be written");
   }
 
   // Run sync
-  const results = await runSync(config)
+  const results = await runSync(config);
 
   // Summary
-  const totalAdded = results.reduce((sum, r) => sum + r.added, 0)
-  const totalUpdated = results.reduce((sum, r) => sum + r.updated, 0)
-  const totalErrors = results.reduce((sum, r) => sum + r.errors, 0)
+  const totalAdded = results.reduce((sum, r) => sum + r.added, 0);
+  const totalUpdated = results.reduce((sum, r) => sum + r.updated, 0);
+  const totalErrors = results.reduce((sum, r) => sum + r.errors, 0);
 
   if (config.dryRun) {
     logger.info(
-      `[DRY RUN] Would import ${totalAdded} transactions across ${results.length} accounts. No changes written.`
-    )
+      `[DRY RUN] Would import ${totalAdded} transactions across ${results.length} accounts. No changes written.`,
+    );
   } else {
     logger.info(
       { totalAdded, totalUpdated, totalErrors, accounts: results.length },
-      'Sync complete. Changes pushed to Actual Budget server.'
-    )
+      "Sync complete. Changes pushed to Actual Budget server.",
+    );
   }
 
   if (totalErrors > 0) {
-    process.exit(EXIT_SYNC_ERRORS)
+    process.exit(EXIT_SYNC_ERRORS);
   }
 }
 
 main().catch((error) => {
   if (error instanceof ConfigError) {
-    console.error(`ERROR: ${error.message}`)
-    process.exit(EXIT_CONFIG_ERROR)
+    console.error(`ERROR: ${error.message}`);
+    process.exit(EXIT_CONFIG_ERROR);
   }
 
   if (error instanceof ApiVersionMismatchError) {
@@ -289,21 +293,24 @@ main().catch((error) => {
         bundledVersion: error.bundledVersion,
         downloadError: error.downloadError,
       },
-      error.message
-    )
-    process.exit(EXIT_VERSION_MISMATCH)
+      error.message,
+    );
+    process.exit(EXIT_VERSION_MISMATCH);
   }
 
   if (
     error instanceof Error &&
-    (error.message.includes('ECONNREFUSED') ||
-      error.message.includes('ENOTFOUND') ||
-      error.message.includes('Failed to reach'))
+    (error.message.includes("ECONNREFUSED") ||
+      error.message.includes("ENOTFOUND") ||
+      error.message.includes("Failed to reach"))
   ) {
-    logger.error({ error: error.message }, 'Connection error')
-    process.exit(EXIT_CONNECTION_ERROR)
+    logger.error({ error: error.message }, "Connection error");
+    process.exit(EXIT_CONNECTION_ERROR);
   }
 
-  logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Unexpected error')
-  process.exit(EXIT_SYNC_ERRORS)
-})
+  logger.error(
+    { error: error instanceof Error ? error.message : String(error) },
+    "Unexpected error",
+  );
+  process.exit(EXIT_SYNC_ERRORS);
+});

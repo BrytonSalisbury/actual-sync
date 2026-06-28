@@ -91,6 +91,7 @@ docker run --rm --env-file .env \
 | `SYNC_DAYS` | No | `30` | Number of days of history to sync |
 | `LOG_LEVEL` | No | `info` | `debug`, `info`, `warn`, or `error` |
 | `DRY_RUN` | No | `false` | Set to `true` to preview without importing |
+| `ACTUAL_REIMPORT_DELETED` | No | `false` | Set to `true` to re-import deleted/merged transactions |
 | `WEBHOOK_URL` | No | — | POST transaction updates to this URL (see [Webhook Notifications](#webhook-notifications)) |
 | `WEBHOOK_BEARER_TOKEN` | No | — | Bearer token sent as `Authorization: Bearer <token>` |
 | `WEBHOOK_EXCLUDED_ACCOUNT_IDS` | No | — | Comma-separated Redbark account IDs to skip notifications for |
