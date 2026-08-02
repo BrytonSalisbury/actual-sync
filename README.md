@@ -1,5 +1,10 @@
 # Redbark Actual Sync
 
+> [!WARNING]
+> **Deprecated.** Actual Budget syncs from Redbark natively over SimpleFIN (Actual `24.10.0` and later): generate a setup token in **Settings > SimpleFIN** in Redbark, paste it into **Settings > Bank Sync** in Actual, and link your accounts. No container needed. See the [setup guide](https://docs.redbark.com/actual-budget).
+>
+> This container still works and existing setups can keep running, but it won't get new features. If you migrate, stop this container's schedule before linking the same accounts natively, since the two use different dedup markers.
+
 Automatically sync bank transactions from [Redbark](https://redbark.com) to your self-hosted [Actual Budget](https://actualbudget.org/) instance.
 
 Ships as a single Docker image. Pull, configure, schedule, done.
